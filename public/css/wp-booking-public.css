@@ -1,0 +1,699 @@
+/**
+ * Estilos para el área pública del plugin WP Booking - Versión Optimizada y Corregida
+ *
+ * @since      1.0.1
+ * @package    WP_Booking_Plugin
+ * @subpackage WP_Booking_Plugin/public
+ */
+
+/* --- Reset y Estilos Base --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: #4a5568; /* Gris medio oscuro para texto */
+    background-color: #f7fafc; /* Fondo gris muy claro */
+}
+
+/* --- Contenedor Principal --- */
+.wp-booking-container {
+    max-width: 100%; /* Full width */
+    margin: 0 auto;
+    padding: 2rem 1rem; /* Padding lateral reducido para móviles */
+}
+
+@media (min-width: 768px) {
+    .wp-booking-container {
+        padding: 3rem 2rem;
+    }
+}
+
+/* --- Encabezado y Filtros --- */
+.wp-booking-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.wp-booking-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748; /* Gris muy oscuro */
+    margin-bottom: 0.5rem;
+}
+
+.wp-booking-header p {
+    font-size: 1.1rem;
+    color: #718096; /* Gris */
+    margin-bottom: 2rem;
+}
+
+.wp-booking-categories {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+.wp-booking-category-btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #e2e8f0; /* Borde gris claro */
+    border-radius: 20px;
+    background-color: #fff;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.wp-booking-category-btn i {
+    color: #a0aec0; /* Gris claro para iconos */
+    transition: color 0.3s ease;
+}
+
+.wp-booking-category-btn:hover,
+.wp-booking-category-btn.active {
+    background-color: #667eea; /* Morado suave */
+    color: #fff;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.wp-booking-category-btn:hover i,
+.wp-booking-category-btn.active i {
+    color: #fff;
+}
+
+/* --- Grid de Servicios --- */
+.wp-booking-services {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.wp-booking-service-card {
+    background-color: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.wp-booking-service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+}
+
+.wp-booking-service-image {
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.wp-booking-service-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.wp-booking-service-card:hover .wp-booking-service-image img {
+    transform: scale(1.05);
+}
+
+.wp-booking-placeholder-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e2e8f0;
+    color: #a0aec0;
+    font-size: 3rem;
+}
+
+.wp-booking-service-category {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(102, 126, 234, 0.9); /* Morado suave */
+    color: #fff;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.wp-booking-service-info {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.wp-booking-service-info h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.8rem;
+    line-height: 1.4;
+}
+
+.wp-booking-service-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.wp-booking-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.wp-booking-meta-item i {
+    color: #a0aec0;
+}
+
+.wp-booking-service-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-top: auto; /* Empuja el precio y botón hacia abajo */
+    margin-bottom: 1rem;
+}
+
+.wp-booking-reserve-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    width: 100%;
+}
+
+.wp-booking-reserve-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+/* --- Modal --- */
+.wp-booking-modal {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    z-index: 1050; /* Encima de otros elementos */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    outline: 0;
+}
+
+.wp-booking-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 1040;
+    animation: fadeIn 0.3s ease;
+}
+
+.wp-booking-modal-container {
+    position: relative;
+    margin: 1.75rem auto;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
+    width: 90%;
+    max-width: 700px;
+    max-height: calc(100vh - 3.5rem);
+    overflow-y: auto;
+    animation: slideIn 0.4s ease;
+}
+
+.wp-booking-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 1.2rem;
+    color: #718096;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+    z-index: 1060;
+}
+
+.wp-booking-modal-close:hover {
+    background: #fff;
+    color: #2d3748;
+    transform: scale(1.1);
+}
+
+.wp-booking-modal-content {
+    padding: 2rem;
+}
+
+.wp-booking-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #718096;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.wp-booking-back-btn:hover {
+    color: #667eea;
+}
+
+.wp-booking-service-header {
+    margin-bottom: 1.5rem;
+}
+
+.wp-booking-service-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.3rem;
+}
+
+.wp-booking-service-category-badge {
+    display: inline-block;
+    background-color: #e9d8fd; /* Lavanda claro */
+    color: #6b46c1; /* Morado */
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.wp-booking-service-image-large {
+    width: 100%;
+    height: 300px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background-color: #e2e8f0;
+}
+
+.wp-booking-service-image-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wp-booking-placeholder-image-large {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #a0aec0;
+    font-size: 4rem;
+}
+
+.wp-booking-service-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.wp-booking-detail-item {
+    text-align: center;
+    background-color: #f7fafc;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.wp-booking-detail-item i {
+    font-size: 1.8rem;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.wp-booking-detail-item h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #718096;
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+}
+
+.wp-booking-detail-item p {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2d3748;
+    margin: 0;
+}
+
+.wp-booking-service-description {
+    margin-bottom: 2rem;
+}
+
+.wp-booking-service-description h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.8rem;
+}
+
+.wp-booking-service-description div {
+    color: #4a5568;
+    line-height: 1.7;
+}
+
+/* --- Formulario de Reserva --- */
+.wp-booking-reservation-form {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 2rem;
+}
+
+.wp-booking-reservation-form h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+}
+
+.wp-booking-form-group {
+    margin-bottom: 1.2rem;
+}
+
+.wp-booking-form-group label {
+    display: block;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+}
+
+.wp-booking-form-group input[type="text"],
+.wp-booking-form-group input[type="email"],
+.wp-booking-form-group input[type="tel"],
+.wp-booking-form-group input[type="number"] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.wp-booking-form-group input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    outline: none;
+}
+
+/* Artículos Adicionales */
+#wp-booking-items-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+#wp-booking-items-container h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.wp-booking-item-group {
+    margin-bottom: 1rem;
+}
+
+.wp-booking-item-group h5 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.wp-booking-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+}
+
+.wp-booking-item label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: #4a5568;
+    margin: 0;
+    cursor: pointer;
+}
+
+.wp-booking-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #667eea;
+}
+
+.wp-booking-item-price {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+/* Total y Botón de Confirmar */
+.wp-booking-total {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    text-align: right;
+}
+
+.wp-booking-total h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.wp-booking-total span {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.wp-booking-submit-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); /* Verde */
+    color: #fff;
+    padding: 0.9rem 2rem;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+.wp-booking-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(72, 187, 120, 0.3);
+}
+
+/* --- Modales de Feedback (Procesando, Éxito, Error) --- */
+.wp-booking-modal-small .wp-booking-modal-container {
+    max-width: 400px;
+}
+
+.wp-booking-modal-center .wp-booking-modal-content {
+    text-align: center;
+}
+
+.wp-booking-processing .wp-booking-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(102, 126, 234, 0.3);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+}
+
+.wp-booking-success-icon i,
+.wp-booking-error-icon i {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}
+
+.wp-booking-success-icon i {
+    color: #48bb78; /* Verde */
+}
+
+.wp-booking-error-icon i {
+    color: #f56565; /* Rojo */
+}
+
+.wp-booking-modal-center h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.8rem;
+}
+
+.wp-booking-modal-center p {
+    color: #718096;
+    margin-bottom: 1.5rem;
+}
+
+#wp-booking-reservation-details {
+    text-align: left;
+    background-color: #f7fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+#wp-booking-reservation-details p {
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+
+#wp-booking-reservation-details strong {
+    color: #2d3748;
+}
+
+#wp-booking-qr-code img {
+    display: block;
+    margin: 1rem auto 1.5rem auto;
+    max-width: 150px;
+}
+
+.wp-booking-close-btn {
+    background-color: #e2e8f0;
+    color: #4a5568;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.wp-booking-close-btn:hover {
+    background-color: #cbd5e0;
+}
+
+/* --- Indicador de Carga y Estado Vacío --- */
+.wp-booking-loading {
+    display: none; /* Oculto por defecto */
+    text-align: center;
+    padding: 3rem 0;
+    color: #718096;
+}
+
+.wp-booking-loading .wp-booking-spinner {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(102, 126, 234, 0.3);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 0.5rem;
+}
+
+.wp-booking-no-services {
+    text-align: center;
+    padding: 3rem 1rem;
+    background-color: #fff;
+    border-radius: 10px;
+    color: #718096;
+    grid-column: 1 / -1; /* Ocupa todo el ancho del grid */
+}
+
+/* --- Animaciones --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Responsividad --- */
+@media (max-width: 768px) {
+    .wp-booking-header h2 {
+        font-size: 2rem;
+    }
+    .wp-booking-services {
+        grid-template-columns: 1fr;
+    }
+    .wp-booking-modal-container {
+        width: 95%;
+        margin: 1rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    .wp-booking-modal-content {
+        padding: 1.5rem;
+    }
+    .wp-booking-service-header h2 {
+        font-size: 1.5rem;
+    }
+    .wp-booking-service-image-large {
+        height: 200px;
+    }
+}
+

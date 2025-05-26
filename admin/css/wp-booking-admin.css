@@ -1,0 +1,226 @@
+.wp-booking-admin-header {
+    margin-bottom: 20px;
+}
+
+.wp-booking-admin-header h1 {
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.wp-booking-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.wp-booking-form-container {
+    margin-top: 20px;
+}
+
+.wp-booking-form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.wp-booking-form-container input[type="text"],
+.wp-booking-form-container input[type="number"],
+.wp-booking-form-container input[type="email"],
+.wp-booking-form-container input[type="date"],
+.wp-booking-form-container input[type="datetime-local"],
+.wp-booking-form-container textarea,
+.wp-booking-form-container select {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 15px;
+}
+
+.wp-booking-form-container textarea {
+    min-height: 100px;
+}
+
+.wp-booking-form-actions {
+    margin-top: 20px;
+}
+
+.wp-booking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.wp-booking-table th,
+.wp-booking-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.wp-booking-table th {
+    background-color: #f8f8f8;
+    font-weight: 600;
+}
+
+.wp-booking-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.wp-booking-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.wp-booking-status-active {
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.wp-booking-status-inactive {
+    background-color: #f2dede;
+    color: #a94442;
+}
+
+.wp-booking-status-pending {
+    background-color: #fcf8e3;
+    color: #8a6d3b;
+}
+
+.wp-booking-status-confirmed {
+    background-color: #d9edf7;
+    color: #31708f;
+}
+
+.wp-booking-status-cancelled {
+    background-color: #f2dede;
+    color: #a94442;
+}
+
+.wp-booking-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.wp-booking-actions a {
+    text-decoration: none;
+}
+
+.wp-booking-dashboard-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.wp-booking-stat-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    padding: 20px;
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+}
+
+.wp-booking-stat-card h3 {
+    margin-top: 0;
+    color: #23282d;
+}
+
+.wp-booking-stat-card .stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #0073aa;
+}
+
+.wp-booking-tabs {
+    margin-top: 20px;
+}
+
+.wp-booking-tabs-nav {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.wp-booking-tabs-nav a {
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #23282d;
+    font-weight: 600;
+}
+
+.wp-booking-tabs-nav a.active {
+    border-bottom: 2px solid #0073aa;
+    color: #0073aa;
+}
+
+.wp-booking-tab-content {
+    display: none;
+}
+
+.wp-booking-tab-content.active {
+    display: block;
+}
+
+.wp-booking-image-preview {
+    max-width: 150px;
+    max-height: 150px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+}
+
+.wp-booking-gallery-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.wp-booking-gallery-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border: 1px solid #ddd;
+}
+
+.wp-booking-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wp-booking-gallery-item .remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 782px) {
+    .wp-booking-dashboard-stats {
+        flex-direction: column;
+    }
+    
+    .wp-booking-tabs-nav {
+        flex-direction: column;
+    }
+    
+    .wp-booking-tabs-nav a {
+        border-bottom: 1px solid #ccc;
+    }
+    
+    .wp-booking-tabs-nav a.active {
+        border-bottom: 1px solid #0073aa;
+    }
+}
