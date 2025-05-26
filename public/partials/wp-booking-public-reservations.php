@@ -107,9 +107,9 @@ $ajax_nonce = wp_create_nonce('wp_booking_public_actions_nonce');
                                 <i class="fas fa-image"></i>
                             </div>
                         <?php endif; ?>
-                            <span><?php echo esc_html($service->category_name); ?></span>
-                        </div>
+                        <span class="wp-booking-service-category"><?php echo esc_html($service->category_name); ?></span>
                     </div>
+                    
                     <div class="wp-booking-service-info">
                         <h3><?php echo esc_html($service->title); ?></h3>
                         
