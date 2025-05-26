@@ -332,63 +332,90 @@ class WP_Booking_Public {
      * @since    1.0.0
      */
     public function process_reservation() {
-        try {
-            // Verificar nonce y datos requeridos
-            $this->validate_reservation_request();
-            
-            // Obtener y validar datos del servicio
-            $service = $this->get_and_validate_service();
-            
-            // Procesar la reserva
-            $reservation_data = $this->create_reservation($service);
-            
-            // Generar y enviar códigos QR
-            $qr_codes = $this->generate_qr_codes($reservation_data);
-            
-            // Enviar email de confirmación
-            $this->send_confirmation_email(
-                $reservation_data['customer_email'],
-                $reservation_data['customer_name'],
-                $service,
-                $reservation_data['reservation_code'],
-                $qr_codes
-            );
-            
-            // Enviar respuesta exitosa
-            wp_send_json_success([
-                'message' => __('¡Reserva realizada con éxito!', 'wp-booking-plugin'),
-                'reservation_id' => $reservation_data['id'],
-                'reservation_code' => $reservation_data['reservation_code'],
-                'qr_codes' => $qr_codes,
-                'details' => [
-                    'service_name' => $service->title,
-                    'customer_name' => $reservation_data['customer_name'],
-                    'customer_email' => $reservation_data['customer_email'],
-                    'customer_phone' => $reservation_data['customer_phone'],
-                    'num_people' => $reservation_data['num_people'],
-                    'total_price' => number_format($reservation_data['total_price'], 2),
-                    'status' => 'pending'
-                ]
-            ]);
-        
-        } catch (Exception $e) {
-            wp_send_json_error(['message' => $e->getMessage()]);
-        }
-    }
+        global $wpdb;
 
-    /**
-     * Valida los datos de la solicitud de reserva
-     * @throws Exception
-     */
-    private function validate_reservation_request() {
+        // Verificar nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
-            throw new Exception(__('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin'));
+            wp_send_json_error(['message' => 'Error de seguridad. Por favor, recarga la página.']);
+            return;
         }
 
+        // Validar datos requeridos
         $required_fields = ['service_id', 'customer_name', 'customer_email', 'customer_phone', 'num_people'];
         foreach ($required_fields as $field) {
             if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
-                throw new Exception(__('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin'));
+                wp_send_json_error(['message' => 'Por favor, completa todos los campos requeridos.']);
+                return;
+            }
+        }
+
+        // Obtener servicio
+        $service = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}booking_services WHERE id = %d AND status = 1",
+            intval($_POST['service_id'])
+        ));
+
+        if (!$service) {
+            wp_send_json_error(['message' => 'El servicio seleccionado no está disponible.']);
+            return;
+        }
+
+        // Generar código de reserva
+        $reservation_code = 'RES-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+
+        // Insertar reserva
+        $result = $wpdb->insert(
+            $wpdb->prefix . 'booking_reservations',
+            [
+                'service_id' => $service->id,
+                'reservation_code' => $reservation_code,
+                'customer_name' => sanitize_text_field($_POST['customer_name']),
+                'customer_email' => sanitize_email($_POST['customer_email']),
+                'customer_phone' => sanitize_text_field($_POST['customer_phone']),
+                'num_people' => intval($_POST['num_people']),
+                'total_price' => floatval($service->price) * intval($_POST['num_people']),
+                'reservation_date' => current_time('mysql'),
+                'status' => 'pending'
+            ],
+            ['%d', '%s', '%s', '%s', '%s', '%d', '%f', '%s', '%s']
+        );
+
+        if ($result === false) {
+            wp_send_json_error(['message' => 'Error al guardar la reserva.']);
+            return;
+        }
+
+        // Enviar email al cliente
+        $to = sanitize_email($_POST['customer_email']);
+        $subject = 'Confirmación de Reserva - ' . $reservation_code;
+        $message = "Hola " . sanitize_text_field($_POST['customer_name']) . ",\n\n";
+        $message .= "Tu reserva ha sido registrada con éxito.\n\n";
+        $message .= "Detalles de la reserva:\n";
+        $message .= "Código: " . $reservation_code . "\n";
+        $message .= "Servicio: " . $service->title . "\n";
+        $message .= "Personas: " . intval($_POST['num_people']) . "\n";
+        $message .= "Total: €" . number_format(floatval($service->price) * intval($_POST['num_people']), 2) . "\n\n";
+        $message .= "Estado: Pendiente de confirmación\n\n";
+        $message .= "Gracias por tu reserva.";
+
+        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        wp_mail($to, $subject, $message, $headers);
+
+        // Enviar respuesta exitosa
+        wp_send_json_success([
+            'message' => '¡Reserva realizada con éxito!',
+            'reservation_code' => $reservation_code,
+            'details' => [
+                'service_name' => $service->title,
+                'customer_name' => $_POST['customer_name'],
+                'customer_email' => $_POST['customer_email'],
+                'customer_phone' => $_POST['customer_phone'],
+                'num_people' => $_POST['num_people'],
+                'total_price' => number_format(floatval($service->price) * intval($_POST['num_people']), 2),
+                'status' => 'pending'
+            ]
+        ]);
+    }
             }
         }
     }
