@@ -416,9 +416,6 @@ class WP_Booking_Public {
             ]
         ]);
     }
-            }
-        }
-    }
 
     /**
      * Obtiene y valida los datos del servicio
