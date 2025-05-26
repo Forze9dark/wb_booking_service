@@ -448,7 +448,7 @@ class WP_Booking_Public {
                     "num_people" => $num_people,
                     "total_price" => $total_price,
                     "reservation_date" => current_time("mysql"), // Usar fecha actual
-                    "status" => "confirmed" // Confirmar directamente por ahora
+                    "status" => "pending" // Estado inicial pendiente
                 ),
                 array(
                     "%d", "%s", "%s", "%s", "%s", "%d", "%f", "%s", "%s"
@@ -494,20 +494,14 @@ class WP_Booking_Public {
             // Confirmar transacción
             $wpdb->query("COMMIT");
             
-            // Generar códigos QR si está habilitado
-            $qr_codes = array();
-            if ($service->enable_qr) {
-                // Aquí iría la lógica para generar QR (requiere librería externa)
-                // Por ahora, simulamos un QR
-                $qr_codes[] = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode("Reserva:{$reservation_code}-Persona:1");
-            }
+            // Enviar correo de confirmación de reserva
+            $this->send_reservation_confirmation_email($customer_name, $customer_email, $service->title, $num_people, $total_price, $reservation_code);
             
             // Enviar respuesta exitosa
             wp_send_json_success(array(
                 "message" => __("¡Reserva realizada con éxito!", "wp-booking-plugin"),
                 "reservation_id" => $reservation_id,
                 "reservation_code" => $reservation_code,
-                "qr_codes" => $qr_codes,
                 "details" => array(
                     "service_name" => $service->title,
                     "customer_name" => $customer_name,
@@ -658,4 +652,71 @@ class WP_Booking_Public {
         
         return $group_items;
     }
-}
+
+    /**
+     * Envía el correo de confirmación de reserva
+     */
+    private function send_reservation_confirmation_email($customer_name, $customer_email, $service_title, $num_people, $total_price, $reservation_code) {
+        $subject = sprintf(__('Confirmación de Reserva - %s', 'wp-booking-plugin'), $service_title);
+        
+        $message = sprintf(
+            __('Hola %s,
+
+Gracias por tu reserva. A continuación encontrarás los detalles:
+
+Servicio: %s
+Número de personas: %d
+Precio total: %.2f €
+Código de reserva: %s
+
+Tu reserva está pendiente de confirmación. Recibirás otro correo cuando sea confirmada.
+
+Saludos,
+%s', 'wp-booking-plugin'),
+            $customer_name,
+            $service_title,
+            $num_people,
+            $total_price,
+            $reservation_code,
+            get_bloginfo('name')
+        );
+        
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        
+        wp_mail($customer_email, $subject, nl2br($message), $headers);
+    }
+
+    /**
+     * Envía el correo con los códigos QR cuando la reserva se completa
+     */
+    private function send_qr_codes_email($reservation_id) {
+        global $wpdb;
+        
+        // Obtener datos de la reserva
+        $reservation = $wpdb->get_row($wpdb->prepare(
+            "SELECT r.*, s.title as service_title, s.enable_qr 
+             FROM {$wpdb->prefix}booking_reservations r
+             LEFT JOIN {$wpdb->prefix}booking_services s ON r.service_id = s.id
+             WHERE r.id = %d",
+            $reservation_id
+        ));
+        
+        if (!$reservation || !$reservation->enable_qr) {
+            return;
+        }
+        
+        $subject = sprintf(__('Códigos QR para tu reserva - %s', 'wp-booking-plugin'), $reservation->service_title);
+        
+        $message = sprintf(
+            __('Hola %s,
+
+Tu reserva ha sido completada. A continuación encontrarás los códigos QR para cada persona:
+
+', 'wp-booking-plugin'),
+            $reservation->customer_name
+        );
+        
+        // Generar QR para cada persona
+        $qr_codes = array();
+        for ($i = 1; $i <= $reservation->num_people; $i++) {
+            $qr_
