@@ -692,7 +692,6 @@ Saludos,
     public function send_qr_codes_email($reservation_id) {
         global $wpdb;
         
-        // Obtener datos de la reserva
         $reservation = $wpdb->get_row($wpdb->prepare(
             "SELECT r.*, s.title as service_title, s.enable_qr 
              FROM {$wpdb->prefix}booking_reservations r
@@ -707,19 +706,18 @@ Saludos,
         
         $subject = sprintf(__('Códigos QR para tu reserva - %s', 'wp-booking-plugin'), $reservation->service_title);
         
-        $message = sprintf(
-            __('Hola %s,
+        $message = '<html><body>';
+        $message .= sprintf(
+            __('<p>Hola %s,</p>
 
-Tu reserva ha sido completada. A continuación encontrarás los códigos QR para cada persona:
+<p>Tu reserva ha sido completada. A continuación encontrarás los códigos QR para cada persona:</p>
 
 ', 'wp-booking-plugin'),
             $reservation->customer_name
         );
         
-        // Generar QR para cada persona 
-        $qr_codes = array(); 
+        // Generar QR para cada persona
         for ($i = 1; $i <= $reservation->num_people; $i++) {
-            // Generar datos únicos para cada QR
             $qr_data = array(
                 'reservation_code' => $reservation->reservation_code,
                 'customer_name' => $reservation->customer_name,
@@ -729,53 +727,39 @@ Tu reserva ha sido completada. A continuación encontrarás los códigos QR para
                 'total_people' => $reservation->num_people
             );
             
-            // Convertir a JSON y codificar para URL
             $qr_data_encoded = urlencode(json_encode($qr_data));
             
-            // Generar URL del QR usando qrserver.com
             $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
             
-            // Añadir imagen del QR al mensaje
             $message .= sprintf(
-                '<p><strong>' . __('QR para persona %d de %d:', 'wp-booking-plugin') . '</strong></p>' .
-                '<img src="%s" alt="' . __('Código QR', 'wp-booking-plugin') . '" style="max-width: 200px; height: auto;"><br>' .
-                '<p><em>' . __('Este código es personal e intransferible', 'wp-booking-plugin') . '</em></p><br>',
+                '<div style="margin-bottom: 30px; text-align: center;">
+                    <h3 style="color: #333;">%s</h3>
+                    <img src="%s" alt="%s" style="max-width: 200px; height: auto; margin: 10px 0;">
+                    <p style="color: #666; font-style: italic;">%s</p>
+                </div>',
+                sprintf(__('QR para persona %d de %d', 'wp-booking-plugin'), $i, $reservation->num_people),
                 $i,
-                $reservation->num_people,
-                $qr_url
+                $qr_url,
+                __('Código QR', 'wp-booking-plugin'),
+                __('Este código es personal e intransferible', 'wp-booking-plugin')
             );
-            
-            $qr_codes[] = $qr_url;
         }
         
         $message .= sprintf(
-            __('
-            
-Por favor, guarda estos códigos QR. Los necesitarás para acceder al servicio.
+            __('<p style="margin-top: 20px;">Por favor, guarda estos códigos QR. Los necesitarás para acceder al servicio.</p>
 
-Saludos,
-%s', 'wp-booking-plugin'),
+<p style="margin-top: 20px;">Saludos,<br>%s</p>', 'wp-booking-plugin'),
             get_bloginfo('name')
         );
         
-        // Configurar cabeceras para correo HTML
+        $message .= '</body></html>';
+        
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
-        // Añadir remitente personalizado
         $site_name = get_bloginfo('name');
         $admin_email = get_option('admin_email');
         $headers[] = 'From: ' . $site_name . ' <' . $admin_email . '>';
         
-        // Enviar correo
-        wp_mail($reservation->customer_email, $subject, nl2br($message), $headers);
-        
-        // Actualizar los códigos QR en la base de datos
-        $wpdb->update(
-            $wpdb->prefix . 'booking_reservations',
-            array('qr_codes' => json_encode($qr_codes)),
-            array('id' => $reservation_id),
-            array('%s'),
-            array('%d')
-        );
+        wp_mail($reservation->customer_email, $subject, $message, $headers);
     }
 }
