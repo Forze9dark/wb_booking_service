@@ -165,6 +165,7 @@ class WP_Booking_Activator {
         $table_reservations = $table_prefix . 'reservations';
         $sql[] = "CREATE TABLE IF NOT EXISTS $table_reservations (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            reservation_code VARCHAR(50) NOT NULL,
             service_id INT UNSIGNED NOT NULL,
             customer_name VARCHAR(100) NOT NULL,
             customer_email VARCHAR(100) NOT NULL,
@@ -177,6 +178,7 @@ class WP_Booking_Activator {
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
+            UNIQUE KEY reservation_code (reservation_code),
             KEY service_id (service_id),
             KEY status (status),
             KEY reservation_date (reservation_date)
