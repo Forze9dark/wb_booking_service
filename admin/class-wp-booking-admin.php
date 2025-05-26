@@ -1225,6 +1225,11 @@ class WP_Booking_Admin {
             wp_send_json_error(array('message' => __('Error al actualizar el estado de la reserva.', 'wp-booking-plugin') . ' ' . $wpdb->last_error), 500);
         }
 
+        // Si el estado es 'completed', enviar correo con códigos QR
+        if ($status === 'completed') {
+            $public = new WP_Booking_Public($this->plugin_name, $this->version);
+            $public->send_qr_codes_email($id);
+        }
         wp_send_json_success(array(
             'message' => __('Estado de la reserva actualizado correctamente.', 'wp-booking-plugin')
         ));
