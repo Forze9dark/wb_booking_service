@@ -332,18 +332,18 @@ class WP_Booking_Public {
      * @since    1.0.0
      */
     public function process_reservation() {
+        // Verificar nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
+            wp_send_json_error(array('message' => __('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin')));
+        }
+
         global $wpdb;
         
-        // Verificar nonce
-        if (!isset($_POST["nonce"]) || !wp_verify_nonce($_POST["nonce"], "wp_booking_public_actions_nonce")) {
-            wp_send_json_error(array("message" => __("Error de seguridad (nonce inválido). Por favor, recarga la página.", "wp-booking-plugin")));
-        }
-        
         // Validar datos requeridos
-        $required_fields = array("service_id", "customer_name", "customer_email", "customer_phone", "num_people");
+        $required_fields = array('service_id', 'customer_name', 'customer_email', 'customer_phone', 'num_people');
         foreach ($required_fields as $field) {
             if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
-                wp_send_json_error(array("message" => __("Faltan datos requeridos. Por favor, completa todos los campos.", "wp-booking-plugin")));
+                wp_send_json_error(array('message' => __('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin')));
             }
         }
         
@@ -642,4 +642,3 @@ class WP_Booking_Public {
         return $group_items;
     }
 }
-
