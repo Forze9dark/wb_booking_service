@@ -524,23 +524,25 @@ class WP_Booking_Public {
             // Enviar correo de confirmación
             $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $service->title);
             
-            $message = sprintf('
+            // Plantilla de correo de confirmación
+            $confirmation_message = sprintf('
                 <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #2c3e50;">
                     <div style="background-color: #3498db; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
                         <h1 style="margin: 0; font-size: 28px;">¡Reserva Confirmada!</h1>
+                        <p style="margin: 10px 0 0 0; font-size: 16px;">Gracias por confiar en nosotros</p>
                     </div>
                     
                     <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                         <p style="font-size: 16px; line-height: 1.6;">Hola <strong>%s</strong>,</p>
                         
-                        <p style="font-size: 16px; line-height: 1.6;">Tu reserva para <strong>%s</strong> ha sido confirmada exitosamente.</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #27ae60;">Tu reserva para <strong>%s</strong> ha sido confirmada exitosamente.</p>
                         
                         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
                             <h2 style="color: #2c3e50; font-size: 20px; margin-top: 0;">Detalles de la Reserva</h2>
                             <table style="width: 100%%; border-collapse: collapse; margin-top: 15px;">
                                 <tr>
                                     <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Código de reserva:</td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%s</strong></td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong style="color: #3498db;">%s</strong></td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Servicio:</td>
@@ -552,9 +554,15 @@ class WP_Booking_Public {
                                 </tr>
                                 <tr>
                                     <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Total:</td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%.2f €</strong></td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong style="color: #27ae60;">%.2f €</strong></td>
                                 </tr>
                             </table>
+                        </div>
+                        
+                        <div style="background-color: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                            <p style="color: #856404; margin: 0; font-size: 14px;">
+                                <strong>Importante:</strong> Guarda este correo, ya que contiene los códigos QR necesarios para acceder al servicio.
+                            </p>
                         </div>
                         
                         <div style="margin: 30px 0;">
@@ -564,8 +572,11 @@ class WP_Booking_Public {
                         </div>
                         
                         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-                            <p style="color: #666; font-size: 14px;">Gracias por confiar en nosotros</p>
-                            <p style="color: #666; font-size: 14px; margin-top: 10px;">%s</p>
+                            <p style="color: #666; font-size: 14px;">Si tienes alguna pregunta, no dudes en contactarnos</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                                <strong>%s</strong><br>
+                                <a href="mailto:info@example.com" style="color: #3498db; text-decoration: none;">info@example.com</a>
+                            </p>
                         </div>
                     </div>
                 </div>',
@@ -579,9 +590,62 @@ class WP_Booking_Public {
                 get_bloginfo('name')
             );
 
+            // Plantilla de correo de cancelación
+            $cancellation_message = sprintf('
+                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #2c3e50;">
+                    <div style="background-color: #e74c3c; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                        <h1 style="margin: 0; font-size: 28px;">Reserva Cancelada</h1>
+                        <p style="margin: 10px 0 0 0; font-size: 16px;">Lamentamos que hayas tenido que cancelar</p>
+                    </div>
+                    
+                    <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <p style="font-size: 16px; line-height: 1.6;">Hola <strong>%s</strong>,</p>
+                        
+                        <p style="font-size: 16px; line-height: 1.6; color: #e74c3c;">Tu reserva ha sido cancelada según lo solicitado.</p>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                            <h2 style="color: #2c3e50; font-size: 20px; margin-top: 0;">Detalles de la Reserva Cancelada</h2>
+                            <table style="width: 100%%; border-collapse: collapse; margin-top: 15px;">
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Código de reserva:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong style="color: #e74c3c;">%s</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Servicio:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%s</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Fecha de cancelación:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%s</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div style="background-color: #f8d7da; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                            <p style="color: #721c24; margin: 0; font-size: 14px;">
+                                <strong>Nota:</strong> Los códigos QR asociados a esta reserva han sido desactivados.
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                            <p style="color: #666; font-size: 14px;">Esperamos verte pronto de nuevo</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                                <strong>%s</strong><br>
+                                <a href="mailto:info@example.com" style="color: #3498db; text-decoration: none;">info@example.com</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>',
+                $customer_name,
+                $reservation_code,
+                $service->title,
+                date_i18n(get_option('date_format') . ' ' . get_option('time_format')),
+                get_bloginfo('name')
+            );
+
             $headers = array('Content-Type: text/html; charset=UTF-8');
             
-            if (wp_mail($customer_email, $subject, $message, $headers)) {
+            if (wp_mail($customer_email, $subject, $confirmation_message, $headers)) {
                 if (WP_DEBUG === true) {
                     error_log('WP Booking: Correo de confirmación enviado correctamente a ' . $customer_email);
                 }
