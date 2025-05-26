@@ -510,10 +510,10 @@ class WP_Booking_Public {
                 $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
                 
                 $qr_codes_html .= sprintf(
-                    '<div style="margin: 20px 0; text-align: center;">
-                        <p style="margin-bottom: 10px; color: #666;">Código QR para persona %d de %d</p>
-                        <img src="%s" alt="Código QR" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
-                        <p style="margin-top: 10px; font-style: italic; color: #666;">Este código es personal e intransferible</p>
+                    '<div style="margin: 30px 0; text-align: center; background-color: #f8f9fa; padding: 20px; border-radius: 10px;">
+                        <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 18px;">Código QR para persona %d de %d</h3>
+                        <img src="%s" alt="Código QR" style="max-width: 200px; height: auto; display: block; margin: 0 auto; border: 8px solid white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <p style="margin-top: 15px; font-style: italic; color: #666; font-size: 14px; background-color: #fff3cd; padding: 10px; border-radius: 5px; display: inline-block;">Este código es personal e intransferible</p>
                     </div>',
                     $i,
                     $num_people,
@@ -524,21 +524,51 @@ class WP_Booking_Public {
             // Enviar correo de confirmación
             $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $service->title);
             
-            $message = sprintf(
-                __('Hola %s,
-
-Tu reserva para %s ha sido confirmada.
-
-Detalles de la reserva:
-- Código de reserva: %s
-- Servicio: %s
-- Personas: %d
-- Total: %.2f €
-
-%s
-
-Saludos,
-%s', 'wp-booking-plugin'),
+            $message = sprintf('
+                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #2c3e50;">
+                    <div style="background-color: #3498db; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                        <h1 style="margin: 0; font-size: 28px;">¡Reserva Confirmada!</h1>
+                    </div>
+                    
+                    <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <p style="font-size: 16px; line-height: 1.6;">Hola <strong>%s</strong>,</p>
+                        
+                        <p style="font-size: 16px; line-height: 1.6;">Tu reserva para <strong>%s</strong> ha sido confirmada exitosamente.</p>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                            <h2 style="color: #2c3e50; font-size: 20px; margin-top: 0;">Detalles de la Reserva</h2>
+                            <table style="width: 100%%; border-collapse: collapse; margin-top: 15px;">
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Código de reserva:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%s</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Servicio:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%s</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Personas:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%d</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6; color: #666;">Total:</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><strong>%.2f €</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h2 style="color: #2c3e50; font-size: 20px;">Códigos QR</h2>
+                            <p style="color: #666; margin-bottom: 20px;">Utiliza estos códigos para acceder al servicio:</p>
+                            %s
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                            <p style="color: #666; font-size: 14px;">Gracias por confiar en nosotros</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">%s</p>
+                        </div>
+                    </div>
+                </div>',
                 $customer_name,
                 $service->title,
                 $reservation_code,
