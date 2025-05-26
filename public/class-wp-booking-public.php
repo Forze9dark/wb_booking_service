@@ -332,10 +332,14 @@ class WP_Booking_Public {
      * @since    1.0.0
      */
     public function process_reservation() {
+        // Asegurarse de que no haya salida antes de los headers
+        ob_start();
+        
         try {
             // Verificar nonce
             if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
                 wp_send_json_error(array('message' => __('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin')));
+                ob_end_clean();
                 return;
             }
 
@@ -346,6 +350,7 @@ class WP_Booking_Public {
             foreach ($required_fields as $field) {
                 if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
                     wp_send_json_error(array('message' => __('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin')));
+                    ob_end_clean();
                     return;
                 }
             }
@@ -360,12 +365,14 @@ class WP_Booking_Public {
             // Validar email
             if (!is_email($customer_email)) {
                 wp_send_json_error(array("message" => __("El formato del email no es válido.", "wp-booking-plugin")));
+                ob_end_clean();
                 return;
             }
         
             // Validar número de personas
             if ($num_people <= 0) {
                 wp_send_json_error(array("message" => __("El número de personas debe ser mayor que cero.", "wp-booking-plugin")));
+                ob_end_clean();
                 return;
             }
         
@@ -377,6 +384,7 @@ class WP_Booking_Public {
         
             if (!$service) {
                 wp_send_json_error(array("message" => __("El servicio seleccionado no existe o no está disponible.", "wp-booking-plugin")));
+                ob_end_clean();
                 return;
             }
         
@@ -385,6 +393,7 @@ class WP_Booking_Public {
                 $available = $service->max_capacity - $service->current_bookings;
                 if ($num_people > $available) {
                     wp_send_json_error(array("message" => sprintf(__("No hay suficiente capacidad disponible. Capacidad actual: %d.", "wp-booking-plugin"), $available)));
+                    ob_end_clean();
                     return;
                 }
             }
@@ -508,10 +517,12 @@ class WP_Booking_Public {
                     "total_price" => number_format($total_price, 2)
                 )
             ));
+            ob_end_clean();
             
         } catch (Exception $e) {
             $wpdb->query("ROLLBACK");
             wp_send_json_error(array("message" => __("Error al procesar la reserva: ", "wp-booking-plugin") . $e->getMessage()));
+            ob_end_clean();
         }
     }
     
