@@ -332,17 +332,13 @@ class WP_Booking_Public {
      * @since    1.0.0
      */
     public function process_reservation() {
-        // Prevenir cualquier salida
-        @ob_clean();
-        if (ob_get_level()) {
-            @ob_end_clean();
-        }
+        // Asegurarse de que no haya salida previa
+        ob_start();
         
         try {
             // Verificar nonce
             if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
-                wp_send_json_error(array('message' => __('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin')));
-                return;
+                throw new Exception(__('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin'));
             }
 
             global $wpdb;
@@ -351,8 +347,7 @@ class WP_Booking_Public {
             $required_fields = array('service_id', 'customer_name', 'customer_email', 'customer_phone', 'num_people');
             foreach ($required_fields as $field) {
                 if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
-                    wp_send_json_error(array('message' => __('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin')));
-                    return;
+                    throw new Exception(__('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin'));
                 }
             }
         
@@ -365,14 +360,12 @@ class WP_Booking_Public {
         
             // Validar email
             if (!is_email($customer_email)) {
-                wp_send_json_error(array("message" => __("El formato del email no es válido.", "wp-booking-plugin")));
-                return;
+                throw new Exception(__("El formato del email no es válido.", "wp-booking-plugin"));
             }
         
             // Validar número de personas
             if ($num_people <= 0) {
-                wp_send_json_error(array("message" => __("El número de personas debe ser mayor que cero.", "wp-booking-plugin")));
-                return;
+                throw new Exception(__("El número de personas debe ser mayor que cero.", "wp-booking-plugin"));
             }
         
             // Validar servicio
@@ -382,16 +375,14 @@ class WP_Booking_Public {
             ));
         
             if (!$service) {
-                wp_send_json_error(array("message" => __("El servicio seleccionado no existe o no está disponible.", "wp-booking-plugin")));
-                return;
+                throw new Exception(__("El servicio seleccionado no existe o no está disponible.", "wp-booking-plugin"));
             }
         
             // Validar capacidad
             if ($service->max_capacity > 0) {
                 $available = $service->max_capacity - $service->current_bookings;
                 if ($num_people > $available) {
-                    wp_send_json_error(array("message" => sprintf(__("No hay suficiente capacidad disponible. Capacidad actual: %d.", "wp-booking-plugin"), $available)));
-                    return;
+                    throw new Exception(sprintf(__("No hay suficiente capacidad disponible. Capacidad actual: %d.", "wp-booking-plugin"), $available));
                 }
             }
         
@@ -430,8 +421,9 @@ class WP_Booking_Public {
             // Generar código de reserva único
             $reservation_code = "RES-" . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
         
-            // Iniciar transacción
-            $wpdb->query("START TRANSACTION");
+            // Iniciar transacción y asegurar que no hay salidas previas
+            ob_clean();
+            $wpdb->query('START TRANSACTION');
         
             // Insertar reserva en la base de datos
             $result = $wpdb->insert(
@@ -445,7 +437,7 @@ class WP_Booking_Public {
                     "num_people" => $num_people,
                     "total_price" => $total_price,
                     "reservation_date" => current_time("mysql"), // Usar fecha actual
-                    "status" => "confirmed" // Confirmar directamente por ahora
+                    "status" => "pending" // Cambiar a pendiente por defecto
                 ),
                 array(
                     "%d", "%s", "%s", "%s", "%s", "%d", "%f", "%s", "%s"
@@ -499,6 +491,9 @@ class WP_Booking_Public {
                 $qr_codes[] = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode("Reserva:{$reservation_code}-Persona:1");
             }
             
+            // Enviar email al cliente con los códigos QR
+            $this->send_confirmation_email($customer_email, $customer_name, $service, $reservation_code, $qr_codes);
+            
             // Enviar respuesta exitosa
             wp_send_json_success(array(
                 "message" => __("¡Reserva realizada con éxito!", "wp-booking-plugin"),
@@ -511,14 +506,52 @@ class WP_Booking_Public {
                     "customer_email" => $customer_email,
                     "customer_phone" => $customer_phone,
                     "num_people" => $num_people,
-                    "total_price" => number_format($total_price, 2)
+                    "total_price" => number_format($total_price, 2),
+                    "status" => "pending"
                 )
             ));
             
         } catch (Exception $e) {
             $wpdb->query("ROLLBACK");
-            wp_send_json_error(array("message" => __("Error al procesar la reserva: ", "wp-booking-plugin") . $e->getMessage()));
+            wp_send_json_error(array("message" => $e->getMessage()));
         }
+    }
+    
+    /**
+     * Envía el email de confirmación al cliente
+     */
+    private function send_confirmation_email($customer_email, $customer_name, $service, $reservation_code, $qr_codes) {
+        $subject = sprintf(__('Confirmación de reserva #%s', 'wp-booking-plugin'), $reservation_code);
+        
+        // Construir el cuerpo del email
+        $message = sprintf(
+            __('Hola %s,\n\nGracias por tu reserva. Aquí están los detalles:\n\nServicio: %s\nCódigo de reserva: %s\n\n', 'wp-booking-plugin'),
+            $customer_name,
+            $service->title,
+            $reservation_code
+        );
+
+        // Añadir códigos QR si existen
+        if (!empty($qr_codes)) {
+            $message .= __("\nTus códigos QR:\n", 'wp-booking-plugin');
+            
+            // Adjuntar los códigos QR como imágenes
+            add_action('phpmailer_init', function($phpmailer) use ($qr_codes) {
+                foreach ($qr_codes as $index => $qr_url) {
+                    $qr_image = file_get_contents($qr_url);
+                    $phpmailer->addStringAttachment(
+                        $qr_image,
+                        "qr-code-{$index}.png",
+                        'base64',
+                        'image/png'
+                    );
+                }
+            });
+        }
+        
+        // Enviar el email
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        wp_mail($customer_email, $subject, $message, $headers);
     }
     
     /**
