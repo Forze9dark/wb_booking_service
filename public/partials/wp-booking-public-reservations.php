@@ -56,7 +56,7 @@ foreach ($groups as $group) {
 }
 
 // Generar nonce para AJAX
-$ajax_nonce = wp_create_nonce('wp_booking_nonce');
+$ajax_nonce = wp_create_nonce('wp_booking_public_actions_nonce');
 ?>
 
 <div class="wp-booking-container">
@@ -331,6 +331,5 @@ $ajax_nonce = wp_create_nonce('wp_booking_nonce');
     var wpBookingServices = <?php echo json_encode($services); ?>;
     var wpBookingServiceGroups = <?php echo json_encode($service_groups); ?>;
     var wpBookingGroupItems = <?php echo json_encode($group_items); ?>;
-    var wpBookingAjaxNonce = '<?php echo $ajax_nonce; ?>';
     var wpBookingAjaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
 </script>

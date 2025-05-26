@@ -176,7 +176,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'wp_booking_make_reservation',
-                nonce: wpBookingAjaxNonce, // Usar el nonce correcto
+                nonce: wp_booking_ajax.nonce,
                 service_id: $('#wp-booking-service-id').val(),
                 customer_name: customerName,
                 customer_email: customerEmail,
