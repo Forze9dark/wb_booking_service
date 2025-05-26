@@ -1224,12 +1224,86 @@ class WP_Booking_Admin {
         if ($result === false) {
             wp_send_json_error(array('message' => __('Error al actualizar el estado de la reserva.', 'wp-booking-plugin') . ' ' . $wpdb->last_error), 500);
         }
-
-        // Si el estado es 'completed', enviar correo con códigos QR
-        if ($status === 'completed') {
+        
+        // Obtener datos de la reserva
+        $reservation = $wpdb->get_row($wpdb->prepare(
+            "SELECT r.*, s.title as service_title 
+             FROM {$wpdb->prefix}booking_reservations r 
+             LEFT JOIN {$wpdb->prefix}booking_services s ON r.service_id = s.id 
+             WHERE r.id = %d",
+            $id
+        ));
+        
+        if ($reservation) {
             $public = new WP_Booking_Public($this->plugin_name, $this->version);
-            $public->send_qr_codes_email($id);
+            
+            // Enviar correo según el estado
+            switch ($status) {
+                case 'completed':
+                    // Enviar correo con códigos QR
+                    $public->send_qr_codes_email($id);
+                    break;
+                    
+                case 'confirmed':
+                    // Enviar correo de confirmación
+                    $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $reservation->service_title);
+                    $message = sprintf(
+                        __('Hola %s,
+
+Tu reserva para %s ha sido confirmada.
+
+Detalles de la reserva:
+- Código de reserva: %s
+- Servicio: %s
+- Personas: %d
+- Total: %.2f €
+
+Cuando el servicio esté listo, recibirás otro correo con los códigos QR (si aplica).
+
+Saludos,
+%s', 'wp-booking-plugin'),
+                        $reservation->customer_name,
+                        $reservation->service_title,
+                        $reservation->reservation_code,
+                        $reservation->service_title,
+                        $reservation->num_people,
+                        $reservation->total_price,
+                        get_bloginfo('name')
+                    );
+                    wp_mail($reservation->customer_email, $subject, nl2br($message), array('Content-Type: text/html; charset=UTF-8'));
+                    break;
+                    
+                case 'cancelled':
+                    // Enviar correo de cancelación
+                    $subject = sprintf(__('Reserva Cancelada - %s', 'wp-booking-plugin'), $reservation->service_title);
+                    $message = sprintf(
+                        __('Hola %s,
+
+Tu reserva para %s ha sido cancelada.
+
+Detalles de la reserva cancelada:
+- Código de reserva: %s
+- Servicio: %s
+- Personas: %d
+- Total: %.2f €
+
+Si tienes alguna pregunta, por favor contáctanos.
+
+Saludos,
+%s', 'wp-booking-plugin'),
+                        $reservation->customer_name,
+                        $reservation->service_title,
+                        $reservation->reservation_code,
+                        $reservation->service_title,
+                        $reservation->num_people,
+                        $reservation->total_price,
+                        get_bloginfo('name')
+                    );
+                    wp_mail($reservation->customer_email, $subject, nl2br($message), array('Content-Type: text/html; charset=UTF-8'));
+                    break;
+            }
         }
+        
         wp_send_json_success(array(
             'message' => __('Estado de la reserva actualizado correctamente.', 'wp-booking-plugin')
         ));
