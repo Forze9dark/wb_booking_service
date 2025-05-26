@@ -121,18 +121,18 @@ jQuery(document).ready(function($) {
     // Enviar formulario de reserva
     $('#wp-booking-form').on('submit', function(e) {
         e.preventDefault();
-        
+
         var $form = $(this);
         var $submitButton = $form.find('button[type="submit"]');
         var $processingModal = $('#wp-booking-processing-modal');
         var $serviceModal = $('#wp-booking-service-modal');
-
+        
         // Validar formulario
         var customerName = $('#wp-booking-customer-name').val().trim();
         var customerEmail = $('#wp-booking-customer-email').val().trim();
         var customerPhone = $('#wp-booking-customer-phone').val().trim();
         var numPeople = parseInt($('#wp-booking-num-people').val());
-        
+
         if (!customerName) {
             showError('Por favor, introduce tu nombre completo.');
             $('#wp-booking-customer-name').focus();
@@ -157,26 +157,26 @@ jQuery(document).ready(function($) {
         // Recopilar artículos seleccionados
         var selectedItems = [];
         var selectedQuantities = [];
-        
+
         $('.wp-booking-item-checkbox:checked').each(function() {
             var itemId = $(this).val();
             var quantity = 1; // Asumiendo cantidad 1 por ahora
             selectedItems.push(itemId);
             selectedQuantities.push(quantity);
         });
-        
+
         // Mostrar modal de procesamiento y deshabilitar botón
         $serviceModal.hide();
         $processingModal.show();
         $submitButton.prop('disabled', true);
-        
+
         // Enviar datos mediante AJAX usando el objeto localizado
         $.ajax({
             url: wp_booking_ajax.ajax_url, // Corregido
             type: 'POST',
             data: {
                 action: 'wp_booking_make_reservation',
-                nonce: wp_booking_ajax.nonce, // Corregido
+                nonce: wpBookingAjaxNonce, // Usar el nonce correcto
                 service_id: $('#wp-booking-service-id').val(),
                 customer_name: customerName,
                 customer_email: customerEmail,
@@ -186,6 +186,7 @@ jQuery(document).ready(function($) {
                 quantities: selectedQuantities
             },
             dataType: 'json',
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
             success: function(response) {
                 if (response.success) {
                     // Mostrar detalles de la reserva
@@ -195,9 +196,9 @@ jQuery(document).ready(function($) {
                     reservationDetails += '<p><strong>Teléfono:</strong> ' + customerPhone + '</p>';
                     reservationDetails += '<p><strong>Personas:</strong> ' + numPeople + '</p>';
                     reservationDetails += '<p><strong>Total:</strong> ' + $('#wp-booking-total-price').text() + '</p>';
-                    
+
                     $('#wp-booking-reservation-details').html(reservationDetails);
-                    
+
                     // Mostrar código QR si está disponible
                     if (response.data.qr_code) {
                         // Asumiendo que qr_code contiene la URL o los datos para generar
@@ -208,10 +209,10 @@ jQuery(document).ready(function($) {
                     } else {
                         $('#wp-booking-qr-code').empty();
                     }
-                    
+
                     // Mostrar modal de éxito
                     $('#wp-booking-success-modal').show();
-                    
+
                     // Resetear formulario
                     $form[0].reset();
                     updateTotalPrice(); // Resetear precio total
@@ -223,7 +224,14 @@ jQuery(document).ready(function($) {
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 // Mostrar error y volver al modal de servicio
-                showError('Error de conexión: ' + textStatus + '. Por favor, inténtalo de nuevo más tarde.');
+                var errorMessage = '';
+                try {
+                    var response = JSON.parse(jqXHR.responseText);
+                    errorMessage = response.data ? response.data.message : 'Error desconocido';
+                } catch(e) {
+                    errorMessage = 'Error de conexión: ' + textStatus;
+                }
+                showError(errorMessage + '. Por favor, inténtalo de nuevo más tarde.');
                 console.error("AJAX Error: ", textStatus, errorThrown, jqXHR);
                 $serviceModal.show(); // Volver al modal anterior
             },
