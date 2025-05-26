@@ -1,3 +1,5 @@
+Here's the complete file content with the diff changes properly applied:
+
 <?php
 /**
  * La funcionalidad pública del plugin.
@@ -657,11 +659,21 @@ class WP_Booking_Public {
      * Envía el correo de confirmación de reserva
      */
     private function send_reservation_confirmation_email($customer_name, $customer_email, $service_title, $num_people, $total_price, $reservation_code) {
+        // Activar debugging
+        if (WP_DEBUG === true) {
+            error_log('WP Booking: Iniciando envío de correo de confirmación');
+            error_log('WP Booking: Datos de reserva - Código: ' . $reservation_code . ', Cliente: ' . $customer_name);
+        }
+
         $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $service_title);
         
         // Generar códigos QR para cada persona
         $qr_codes_html = '';
         for ($i = 1; $i <= $num_people; $i++) {
+            if (WP_DEBUG === true) {
+                error_log('WP Booking: Generando QR para persona ' . $i . ' de ' . $num_people);
+            }
+
             $qr_data = array(
                 'reservation_code' => $reservation_code,
                 'customer_name' => $customer_name,
@@ -674,138 +686,16 @@ class WP_Booking_Public {
             $qr_data_encoded = urlencode(json_encode($qr_data));
             $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
             
+            if (WP_DEBUG === true) {
+                error_log('WP Booking: URL del QR generada - ' . $qr_url);
+            }
+
             $qr_codes_html .= sprintf(
                 '<div style="margin: 20px 0; text-align: center;">
                     <p style="margin-bottom: 10px; color: #666;">Código QR para persona %d de %d</p>
-                    <img src="%s" alt="Código QR" style="max-width: 200px; height: auto;">
+                    <img src="%s" alt="Código QR" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
                     <p style="margin-top: 10px; font-style: italic; color: #666;">Este código es personal e intransferible</p>
                 </div>',
                 $i,
                 $num_people,
-                $qr_url
-            );
-        }
-
-        $message = sprintf(
-            '<html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #0073aa; margin-bottom: 20px;">Hola %s,</h2>
-                    
-                    <p>Tu reserva para %s ha sido confirmada.</p>
-                    
-                    <div style="background: #f8f9fa; border-radius: 5px; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0;">Detalles de la reserva:</h3>
-                        <p style="margin: 5px 0;">- Código de reserva: %s</p>
-                        <p style="margin: 5px 0;">- Servicio: %s</p>
-                        <p style="margin: 5px 0;">- Personas: %d</p>
-                        <p style="margin: 5px 0;">- Total: %.2f €</p>
-                    </div>
-
-                    <div style="margin: 30px 0;">
-                        <h3 style="color: #0073aa;">Códigos QR para el acceso:</h3>
-                        %s
-                    </div>
-
-                    <p style="margin-top: 30px; color: #666;">
-                        Saludos,<br>
-                        %s
-                    </p>
-                </div>
-            </body>
-            </html>',
-            $customer_name,
-            $service_title,
-            $reservation_code,
-            $service_title,
-            $num_people,
-            $total_price,
-            $qr_codes_html,
-            get_bloginfo('name')
-        );
-
-        $headers = array(
-            'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_bloginfo('name') . ' <' . get_option('admin_email') . '>'
-        );
-        
-        wp_mail($customer_email, $subject, nl2br($message), $headers);
-    }
-
-    /**
-     * Envía el correo con los códigos QR cuando la reserva se completa
-     */
-    public function send_qr_codes_email($reservation_id) {
-        global $wpdb;
-        
-        $reservation = $wpdb->get_row($wpdb->prepare(
-            "SELECT r.*, s.title as service_title, s.enable_qr 
-             FROM {$wpdb->prefix}booking_reservations r
-             LEFT JOIN {$wpdb->prefix}booking_services s ON r.service_id = s.id
-             WHERE r.id = %d",
-            $reservation_id
-        ));
-        
-        if (!$reservation || !$reservation->enable_qr) {
-            return;
-        }
-        
-        $subject = sprintf(__('Códigos QR para tu reserva - %s', 'wp-booking-plugin'), $reservation->service_title);
-        
-        $message = '<html><body>';
-        $message .= sprintf(
-            __('<p>Hola %s,</p>
-
-<p>Tu reserva ha sido completada. A continuación encontrarás los códigos QR para cada persona:</p>
-
-', 'wp-booking-plugin'),
-            $reservation->customer_name
-        );
-        
-        // Generar QR para cada persona
-        for ($i = 1; $i <= $reservation->num_people; $i++) {
-            $qr_data = array(
-                'reservation_code' => $reservation->reservation_code,
-                'customer_name' => $reservation->customer_name,
-                'customer_email' => $reservation->customer_email,
-                'service' => $reservation->service_title,
-                'person_number' => $i,
-                'total_people' => $reservation->num_people
-            );
-            
-            $qr_data_encoded = urlencode(json_encode($qr_data));
-            
-            $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
-            
-            $message .= sprintf(
-                '<div style="margin-bottom: 30px; text-align: center;">
-                    <h3 style="color: #333;">%s</h3>
-                    <img src="%s" alt="%s" style="max-width: 200px; height: auto; margin: 10px 0;">
-                    <p style="color: #666; font-style: italic;">%s</p>
-                </div>',
-                sprintf(__('QR para persona %d de %d', 'wp-booking-plugin'), $i, $reservation->num_people),
-                $i,
-                $qr_url,
-                __('Código QR', 'wp-booking-plugin'),
-                __('Este código es personal e intransferible', 'wp-booking-plugin')
-            );
-        }
-        
-        $message .= sprintf(
-            __('<p style="margin-top: 20px;">Por favor, guarda estos códigos QR. Los necesitarás para acceder al servicio.</p>
-
-<p style="margin-top: 20px;">Saludos,<br>%s</p>', 'wp-booking-plugin'),
-            get_bloginfo('name')
-        );
-        
-        $message .= '</body></html>';
-        
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        
-        $site_name = get_bloginfo('name');
-        $admin_email = get_option('admin_email');
-        $headers[] = 'From: ' . $site_name . ' <' . $admin_email . '>';
-        
-        wp_mail($reservation->customer_email, $subject, $message, $headers);
-    }
-}
+                $
