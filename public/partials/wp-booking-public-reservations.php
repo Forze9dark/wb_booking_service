@@ -62,8 +62,8 @@ $ajax_nonce = wp_create_nonce('wp_booking_nonce');
 <div class="wp-booking-container">
     <!-- Sección de encabezado con filtros de categoría -->
     <div class="wp-booking-header">
-        <h2><?php echo esc_html__('Descubre Experiencias Únicas', 'wp-booking-plugin'); ?></h2>
-        <p><?php echo esc_html__('Explora nuestra selección de servicios y reserva tu próxima aventura', 'wp-booking-plugin'); ?></p>
+        <h2><?php echo esc_html__('Catálogo de Servicios', 'wp-booking-plugin'); ?></h2>
+        <p><?php echo esc_html__('Explora nuestra selección de servicios disponibles', 'wp-booking-plugin'); ?></p>
         
         <div class="wp-booking-categories">
             <button class="wp-booking-category-btn active" data-category="all">
@@ -146,16 +146,13 @@ $ajax_nonce = wp_create_nonce('wp_booking_nonce');
                         </div>
                         
                         <button class="wp-booking-reserve-btn" data-service-id="<?php echo esc_attr($service->id); ?>">
-                            <i class="fas fa-calendar-check"></i> <?php echo esc_html__('Reservar', 'wp-booking-plugin'); ?>
+                            <i class="fas fa-info-circle"></i> <?php echo esc_html__('Ver detalles', 'wp-booking-plugin'); ?>
                         </button>
                     </div>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    
-    <!-- Modal de detalles del servicio y formulario de reserva -->
-    <div class="wp-booking-modal" id="wp-booking-service-modal">
         <div class="wp-booking-modal-overlay"></div>
         <div class="wp-booking-modal-container">
             <button class="wp-booking-modal-close">

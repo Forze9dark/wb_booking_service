@@ -210,14 +210,14 @@ class WP_Booking_Activator {
      * @since    1.0.0
      */
     private static function create_custom_page() {
-        // Comprobar si la página ya existe
-        $page_exists = get_page_by_path('reservas');
+        // Comprobar si la página de catálogo ya existe
+        $page_exists = get_page_by_path('catalogo-servicios');
         
         if (!$page_exists) {
             // Crear la página
             $page_data = array(
-                'post_title'    => 'Reservas',
-                'post_name'     => 'reservas',
+                'post_title'    => 'Catálogo de Servicios',
+                'post_name'     => 'catalogo-servicios',
                 'post_content'  => '[wp_booking_reservations]',
                 'post_status'   => 'publish',
                 'post_type'     => 'page',
