@@ -332,338 +332,330 @@ class WP_Booking_Public {
      * @since    1.0.0
      */
     public function process_reservation() {
-        global $wpdb;
-
-        // Verificar nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
-            wp_send_json_error(['message' => 'Error de seguridad. Por favor, recarga la página.']);
-            return;
-        }
-
-        // Validar datos requeridos
-        $required_fields = ['service_id', 'customer_name', 'customer_email', 'customer_phone', 'num_people'];
-        foreach ($required_fields as $field) {
-            if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
-                wp_send_json_error(['message' => 'Por favor, completa todos los campos requeridos.']);
-                return;
-            }
-        }
-
-        // Obtener servicio
-        $service = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}booking_services WHERE id = %d AND status = 1",
-            intval($_POST['service_id'])
-        ));
-
-        if (!$service) {
-            wp_send_json_error(['message' => 'El servicio seleccionado no está disponible.']);
-            return;
-        }
-
-        // Generar código de reserva
-        $reservation_code = 'RES-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
-
-        // Insertar reserva
-        $result = $wpdb->insert(
-            $wpdb->prefix . 'booking_reservations',
-            [
-                'service_id' => $service->id,
-                'reservation_code' => $reservation_code,
-                'customer_name' => sanitize_text_field($_POST['customer_name']),
-                'customer_email' => sanitize_email($_POST['customer_email']),
-                'customer_phone' => sanitize_text_field($_POST['customer_phone']),
-                'num_people' => intval($_POST['num_people']),
-                'total_price' => floatval($service->price) * intval($_POST['num_people']),
-                'reservation_date' => current_time('mysql'),
-                'status' => 'pending'
-            ],
-            ['%d', '%s', '%s', '%s', '%s', '%d', '%f', '%s', '%s']
-        );
-
-        if ($result === false) {
-            wp_send_json_error(['message' => 'Error al guardar la reserva.']);
-            return;
-        }
-
-        // Enviar email al cliente
-        $to = sanitize_email($_POST['customer_email']);
-        $subject = 'Confirmación de Reserva - ' . $reservation_code;
-        $message = "Hola " . sanitize_text_field($_POST['customer_name']) . ",\n\n";
-        $message .= "Tu reserva ha sido registrada con éxito.\n\n";
-        $message .= "Detalles de la reserva:\n";
-        $message .= "Código: " . $reservation_code . "\n";
-        $message .= "Servicio: " . $service->title . "\n";
-        $message .= "Personas: " . intval($_POST['num_people']) . "\n";
-        $message .= "Total: €" . number_format(floatval($service->price) * intval($_POST['num_people']), 2) . "\n\n";
-        $message .= "Estado: Pendiente de confirmación\n\n";
-        $message .= "Gracias por tu reserva.";
-
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($to, $subject, $message, $headers);
-
-        // Enviar respuesta exitosa
-        wp_send_json_success([
-            'message' => '¡Reserva realizada con éxito!',
-            'reservation_code' => $reservation_code,
-            'details' => [
-                'service_name' => $service->title,
-                'customer_name' => $_POST['customer_name'],
-                'customer_email' => $_POST['customer_email'],
-                'customer_phone' => $_POST['customer_phone'],
-                'num_people' => $_POST['num_people'],
-                'total_price' => number_format(floatval($service->price) * intval($_POST['num_people']), 2),
-                'status' => 'pending'
-            ]
-        ]);
-    }
-
-    /**
-     * Obtiene y valida los datos del servicio
-     * @return object
-     * @throws Exception
-     */
-    private function get_and_validate_service() {
-        global $wpdb;
-        
-        $service_id = intval($_POST['service_id']);
-        $service = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}booking_services WHERE id = %d AND status = 1",
-            $service_id
-        ));
-
-        if (!$service) {
-            throw new Exception(__('El servicio seleccionado no existe o no está disponible.', 'wp-booking-plugin'));
-        }
-
-        // Validar capacidad
-        $num_people = intval($_POST['num_people']);
-        if ($service->max_capacity > 0) {
-            $available = $service->max_capacity - $service->current_bookings;
-            if ($num_people > $available) {
-                throw new Exception(sprintf(__('No hay suficiente capacidad disponible. Capacidad actual: %d.', 'wp-booking-plugin'), $available));
-            }
-        }
-
-        return $service;
-    }
-
-    /**
-     * Crea una nueva reserva en la base de datos
-     * @param object $service
-     * @return array
-     * @throws Exception
-     */
-    private function create_reservation($service) {
-        global $wpdb;
-        
-        // Generar código único
-        $reservation_code = $this->generate_reservation_code();
-        
-        // Calcular precio total
-        $total_price = $this->calculate_total_price($service);
-        
-        // Iniciar transacción
-        $wpdb->query('START TRANSACTION');
+        // Asegurarse de que no haya salida antes de los headers
+        ob_start();
         
         try {
-            // Insertar reserva
-            $result = $wpdb->insert(
-                $wpdb->prefix . 'booking_reservations',
-                [
-                    'service_id' => $service->id,
-                    'reservation_code' => $reservation_code,
-                    'customer_name' => sanitize_text_field($_POST['customer_name']),
-                    'customer_email' => sanitize_email($_POST['customer_email']),
-                    'customer_phone' => sanitize_text_field($_POST['customer_phone']),
-                    'num_people' => intval($_POST['num_people']),
-                    'total_price' => $total_price,
-                    'reservation_date' => current_time('mysql'),
-                    'status' => 'pending'
-                ],
-                ['%d', '%s', '%s', '%s', '%s', '%d', '%f', '%s', '%s']
-            );
-
-            if ($result === false) {
-                throw new Exception(__('Error al guardar la reserva.', 'wp-booking-plugin'));
+            // Verificar nonce
+            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wp_booking_public_actions_nonce')) {
+                wp_send_json_error(array('message' => __('Error de seguridad. Por favor, recarga la página.', 'wp-booking-plugin')));
+                ob_end_clean();
+                return;
             }
 
-            $reservation_id = $wpdb->insert_id;
-
-            // Procesar artículos adicionales
-            $this->process_reservation_items($reservation_id);
-
-            // Actualizar capacidad del servicio
-            $this->update_service_capacity($service->id, intval($_POST['num_people']));
-
-            // Confirmar transacción
-            $wpdb->query('COMMIT');
-
-            return [
-                'id' => $reservation_id,
-                'reservation_code' => $reservation_code,
-                'customer_name' => $_POST['customer_name'],
-                'customer_email' => $_POST['customer_email'],
-                'customer_phone' => $_POST['customer_phone'],
-                'num_people' => intval($_POST['num_people']),
-                'total_price' => $total_price
-            ];
-
-        } catch (Exception $e) {
-            $wpdb->query('ROLLBACK');
-            throw $e;
-        }
-    }
-
-    /**
-     * Genera un código de reserva único
-     * @return string
-     */
-    private function generate_reservation_code() {
-        return 'RES-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
-    }
-
-    /**
-     * Calcula el precio total incluyendo artículos adicionales
-     * @param object $service
-     * @return float
-     */
-    private function calculate_total_price($service) {
-        $num_people = intval($_POST['num_people']);
-        $total_price = floatval($service->price) * $num_people;
-
-        // Añadir precios de artículos adicionales
-        if (!empty($_POST['items']) && is_array($_POST['items'])) {
             global $wpdb;
-            $items = array_map('intval', $_POST['items']);
-            $items_str = implode(',', $items);
             
-            $items_prices = $wpdb->get_results(
-                "SELECT id, price FROM {$wpdb->prefix}booking_items 
-                 WHERE id IN ($items_str) AND status = 1"
-            );
-
-            foreach ($items_prices as $item) {
-                $total_price += floatval($item->price);
-            }
-        }
-
-        return $total_price;
-    }
-
-    /**
-     * Procesa los artículos adicionales de la reserva
-     * @param int $reservation_id
-     * @throws Exception
-     */
-    private function process_reservation_items($reservation_id) {
-        if (empty($_POST['items']) || !is_array($_POST['items'])) {
-            return;
-        }
-
-        global $wpdb;
-        $items = array_map('intval', $_POST['items']);
-        
-        foreach ($items as $item_id) {
-            $result = $wpdb->insert(
-                $wpdb->prefix . 'booking_reservation_items',
-                [
-                    'reservation_id' => $reservation_id,
-                    'item_id' => $item_id,
-                    'quantity' => 1,
-                    'price' => 0
-                ],
-                ['%d', '%d', '%d', '%f']
-            );
-
-            if ($result === false) {
-                throw new Exception(__('Error al procesar los artículos adicionales.', 'wp-booking-plugin'));
-            }
-        }
-    }
-
-    /**
-     * Actualiza la capacidad disponible del servicio
-     * @param int $service_id
-     * @param int $num_people
-     * @throws Exception
-     */
-    private function update_service_capacity($service_id, $num_people) {
-        global $wpdb;
-        
-        $result = $wpdb->query($wpdb->prepare(
-            "UPDATE {$wpdb->prefix}booking_services 
-             SET current_bookings = current_bookings + %d 
-             WHERE id = %d",
-            $num_people,
-            $service_id
-        ));
-
-        if ($result === false) {
-            throw new Exception(__('Error al actualizar la capacidad del servicio.', 'wp-booking-plugin'));
-        }
-    }
-
-    /**
-     * Genera los códigos QR para la reserva
-     * @param array $reservation_data
-     * @return array
-     */
-    private function generate_qr_codes($reservation_data) {
-        $qr_codes = [];
-        
-        // Generar un código QR por persona
-        for ($i = 1; $i <= $reservation_data['num_people']; $i++) {
-            $qr_data = sprintf(
-                'Reserva:%s-Persona:%d',
-                $reservation_data['reservation_code'],
-                $i
-            );
-            
-            $qr_codes[] = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($qr_data);
-        }
-        
-        return $qr_codes;
-    }
-
-    /**
-     * Envía el email de confirmación al cliente
-     * @param string $customer_email
-     * @param string $customer_name
-     * @param object $service
-     * @param string $reservation_code
-     * @param array $qr_codes
-     */
-    private function send_confirmation_email($customer_email, $customer_name, $service, $reservation_code, $qr_codes) {
-        $subject = sprintf(__('Confirmación de reserva #%s', 'wp-booking-plugin'), $reservation_code);
-        
-        // Construir el cuerpo del email
-        $message = sprintf(
-            __('Hola %s,\n\nGracias por tu reserva. Aquí están los detalles:\n\nServicio: %s\nCódigo de reserva: %s\n\n', 'wp-booking-plugin'),
-            $customer_name,
-            $service->title,
-            $reservation_code
-        );
-
-        // Añadir códigos QR si existen
-        if (!empty($qr_codes)) {
-            $message .= __("\nTus códigos QR:\n", 'wp-booking-plugin');
-            
-            // Adjuntar los códigos QR como imágenes
-            add_action('phpmailer_init', function($phpmailer) use ($qr_codes) {
-                foreach ($qr_codes as $index => $qr_url) {
-                    $qr_image = file_get_contents($qr_url);
-                    $phpmailer->addStringAttachment(
-                        $qr_image,
-                        "qr-code-{$index}.png",
-                        'base64',
-                        'image/png'
-                    );
+            // Validar datos requeridos
+            $required_fields = array('service_id', 'customer_name', 'customer_email', 'customer_phone', 'num_people');
+            foreach ($required_fields as $field) {
+                if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
+                    wp_send_json_error(array('message' => __('Faltan datos requeridos. Por favor, completa todos los campos.', 'wp-booking-plugin')));
+                    ob_end_clean();
+                    return;
                 }
-            });
+            }
+        
+            // Obtener y sanitizar datos del formulario
+            $service_id = intval($_POST["service_id"]);
+            $customer_name = sanitize_text_field($_POST["customer_name"]);
+            $customer_email = sanitize_email($_POST["customer_email"]);
+            $customer_phone = sanitize_text_field($_POST["customer_phone"]);
+            $num_people = intval($_POST["num_people"]);
+        
+            // Validar email
+            if (!is_email($customer_email)) {
+                wp_send_json_error(array("message" => __("El formato del email no es válido.", "wp-booking-plugin")));
+                ob_end_clean();
+                return;
+            }
+        
+            // Validar número de personas
+            if ($num_people <= 0) {
+                wp_send_json_error(array("message" => __("El número de personas debe ser mayor que cero.", "wp-booking-plugin")));
+                ob_end_clean();
+                return;
+            }
+        
+            // Validar servicio
+            $service = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}booking_services WHERE id = %d AND status = 1",
+                $service_id
+            ));
+        
+            if (!$service) {
+                wp_send_json_error(array("message" => __("El servicio seleccionado no existe o no está disponible.", "wp-booking-plugin")));
+                ob_end_clean();
+                return;
+            }
+        
+            // Validar capacidad
+            if ($service->max_capacity > 0) {
+                $available = $service->max_capacity - $service->current_bookings;
+                if ($num_people > $available) {
+                    wp_send_json_error(array("message" => sprintf(__("No hay suficiente capacidad disponible. Capacidad actual: %d.", "wp-booking-plugin"), $available)));
+                    ob_end_clean();
+                    return;
+                }
+            }
+        
+            // Calcular precio base
+            $total_price = floatval($service->price) * $num_people;
+        
+            // Procesar artículos adicionales
+            $items = isset($_POST["items"]) && is_array($_POST["items"]) ? array_map("intval", $_POST["items"]) : array();
+            $quantities = isset($_POST["quantities"]) && is_array($_POST["quantities"]) ? array_map("intval", $_POST["quantities"]) : array();
+        
+            $reservation_items_data = array();
+        
+            if (!empty($items)) {
+                $item_ids_placeholders = implode(",", array_fill(0, count($items), "%d"));
+                $items_details = $wpdb->get_results($wpdb->prepare(
+                    "SELECT id, price FROM {$wpdb->prefix}booking_items WHERE id IN ({$item_ids_placeholders}) AND status = 1",
+                    $items
+                ), OBJECT_K);
+
+                foreach ($items as $index => $item_id) {
+                    if (isset($items_details[$item_id])) {
+                        $item_detail = $items_details[$item_id];
+                        $quantity = 1;
+                        $item_price = floatval($item_detail->price) * $quantity;
+                        $total_price += $item_price;
+                    
+                        $reservation_items_data[] = array(
+                            "item_id" => $item_id,
+                            "quantity" => $quantity,
+                            "price" => $item_price
+                        );
+                    }
+                }
+            }
+        
+            // Generar código de reserva único
+            $reservation_code = "RES-" . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+        
+            // Iniciar transacción
+            $wpdb->query("START TRANSACTION");
+        
+            // Insertar reserva en la base de datos
+            $result = $wpdb->insert(
+                $wpdb->prefix . "booking_reservations",
+                array(
+                    "service_id" => $service_id,
+                    "reservation_code" => $reservation_code,
+                    "customer_name" => $customer_name,
+                    "customer_email" => $customer_email,
+                    "customer_phone" => $customer_phone,
+                    "num_people" => $num_people,
+                    "total_price" => $total_price,
+                    "reservation_date" => current_time("mysql"), // Usar fecha actual
+                    "status" => "confirmed" // Confirmar directamente por ahora
+                ),
+                array(
+                    "%d", "%s", "%s", "%s", "%s", "%d", "%f", "%s", "%s"
+                )
+            );
+            
+            if ($result === false) {
+                throw new Exception(__("Error al guardar la reserva principal.", "wp-booking-plugin") . " " . $wpdb->last_error);
+            }
+            
+            $reservation_id = $wpdb->insert_id;
+            
+            // Insertar artículos de la reserva
+            if (!empty($reservation_items_data)) {
+                foreach ($reservation_items_data as $item_data) {
+                    $item_insert_result = $wpdb->insert(
+                        $wpdb->prefix . "booking_reservation_items",
+                        array(
+                            "reservation_id" => $reservation_id,
+                            "item_id" => $item_data["item_id"],
+                            "quantity" => $item_data["quantity"],
+                            "price" => $item_data["price"]
+                        ),
+                        array("%d", "%d", "%d", "%f")
+                    );
+                    if ($item_insert_result === false) {
+                        throw new Exception(__("Error al guardar los artículos de la reserva.", "wp-booking-plugin") . " " . $wpdb->last_error);
+                    }
+                }
+            }
+            
+            // Actualizar contador de reservas en el servicio
+            $update_bookings_result = $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}booking_services SET current_bookings = current_bookings + %d WHERE id = %d",
+                $num_people,
+                $service_id
+            ));
+            
+            if ($update_bookings_result === false) {
+                throw new Exception(__("Error al actualizar la capacidad del servicio.", "wp-booking-plugin") . " " . $wpdb->last_error);
+            }
+            
+            // Confirmar transacción
+            $wpdb->query("COMMIT");
+            
+            // Generar códigos QR si está habilitado
+            $qr_codes = array();
+            if ($service->enable_qr) {
+                // Aquí iría la lógica para generar QR (requiere librería externa)
+                // Por ahora, simulamos un QR
+                $qr_codes[] = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode("Reserva:{$reservation_code}-Persona:1");
+            }
+            
+            // Enviar respuesta exitosa
+            wp_send_json_success(array(
+                "message" => __("¡Reserva realizada con éxito!", "wp-booking-plugin"),
+                "reservation_id" => $reservation_id,
+                "reservation_code" => $reservation_code,
+                "qr_codes" => $qr_codes,
+                "details" => array(
+                    "service_name" => $service->title,
+                    "customer_name" => $customer_name,
+                    "customer_email" => $customer_email,
+                    "customer_phone" => $customer_phone,
+                    "num_people" => $num_people,
+                    "total_price" => number_format($total_price, 2)
+                )
+            ));
+            ob_end_clean();
+            
+        } catch (Exception $e) {
+            $wpdb->query("ROLLBACK");
+            wp_send_json_error(array("message" => __("Error al procesar la reserva: ", "wp-booking-plugin") . $e->getMessage()));
+            ob_end_clean();
+        }
+    }
+    
+    /**
+     * Obtiene detalles de un servicio específico para AJAX.
+     *
+     * @since    1.0.0
+     */
+    public function ajax_get_service_details() {
+        global $wpdb;
+        
+        // Verificar nonce
+        if (!isset($_POST["nonce"]) || !wp_verify_nonce($_POST["nonce"], "wp_booking_public_actions_nonce")) {
+            wp_send_json_error(array("message" => __("Error de seguridad.", "wp-booking-plugin")));
         }
         
-        // Enviar el email
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        wp_mail($customer_email, $subject, $message, $headers);
+        $service_id = isset($_POST["service_id"]) ? intval($_POST["service_id"]) : 0;
+        
+        if ($service_id <= 0) {
+            wp_send_json_error(array("message" => __("ID de servicio inválido.", "wp-booking-plugin")));
+        }
+        
+        // Obtener datos del servicio
+        $service = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}booking_services WHERE id = %d AND status = 1",
+            $service_id
+        ), ARRAY_A);
+        
+        if (!$service) {
+            wp_send_json_error(array("message" => __("Servicio no encontrado o no disponible.", "wp-booking-plugin")));
+        }
+        
+        // Obtener grupos de artículos asociados
+        $service_groups = $this->get_service_groups_data_for_service($service_id);
+        
+        // Obtener artículos de esos grupos
+        $group_items = array();
+        if (!empty($service_groups)) {
+            $group_ids = wp_list_pluck($service_groups, "id");
+            $group_items = $this->get_group_items_data_for_groups($group_ids);
+        }
+        
+        // Obtener URL de imagen principal
+        $main_image_url = "";
+        if (!empty($service["main_image_id"])) {
+            $main_image_url = wp_get_attachment_url($service["main_image_id"]);
+        }
+        
+        // Obtener URLs de galería de imágenes
+        $gallery_image_urls = array();
+        if (!empty($service["gallery_image_ids"])) {
+            $gallery_ids = explode(",", $service["gallery_image_ids"]);
+            foreach ($gallery_ids as $image_id) {
+                $url = wp_get_attachment_url(intval($image_id));
+                if ($url) {
+                    $gallery_image_urls[] = $url;
+                }
+            }
+        }
+        
+        // Preparar datos para la respuesta
+        $response_data = array(
+            "service" => $service,
+            "main_image_url" => $main_image_url,
+            "gallery_image_urls" => $gallery_image_urls,
+            "groups" => $service_groups,
+            "items" => $group_items
+        );
+        
+        wp_send_json_success($response_data);
+    }
+    
+    /**
+     * Obtiene los grupos de artículos asociados a un servicio específico.
+     *
+     * @since    1.0.0
+     * @param    int $service_id ID del servicio.
+     * @return   array
+     */
+    private function get_service_groups_data_for_service($service_id) {
+        global $wpdb;
+        $service_groups_table = $wpdb->prefix . "booking_service_item_groups";
+        $groups_table = $wpdb->prefix . "booking_item_groups";
+        
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT g.id, g.name 
+             FROM {$service_groups_table} sg 
+             JOIN {$groups_table} g ON sg.group_id = g.id 
+             WHERE sg.service_id = %d AND g.status = 1", 
+            $service_id
+        ), ARRAY_A);
+        
+        return $results ? $results : array();
+    }
+
+    /**
+     * Obtiene los artículos activos para una lista de IDs de grupo.
+     *
+     * @since    1.0.0
+     * @param    array $group_ids IDs de los grupos.
+     * @return   array Mapeo group_id => [item_data, ...]
+     */
+    private function get_group_items_data_for_groups($group_ids) {
+        global $wpdb;
+        $items_table = $wpdb->prefix . "booking_items";
+        
+        if (empty($group_ids)) {
+            return array();
+        }
+        
+        $ids_placeholders = implode(",", array_fill(0, count($group_ids), "%d"));
+        
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, group_id, name, price 
+             FROM {$items_table} 
+             WHERE group_id IN ({$ids_placeholders}) AND status = 1", 
+            $group_ids
+        ), ARRAY_A);
+        
+        $group_items = array();
+        if ($results) {
+            foreach ($results as $row) {
+                if (!isset($group_items[$row["group_id"]])) {
+                    $group_items[$row["group_id"]] = array();
+                }
+                $group_items[$row["group_id"]][] = array(
+                    "id" => $row["id"],
+                    "name" => $row["name"],
+                    "price" => $row["price"]
+                );
+            }
+        }
+        
+        return $group_items;
     }
 }
