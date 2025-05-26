@@ -689,7 +689,7 @@ Saludos,
     /**
      * Envía el correo con los códigos QR cuando la reserva se completa
      */
-    private function send_qr_codes_email($reservation_id) {
+    public function send_qr_codes_email($reservation_id) {
         global $wpdb;
         
         // Obtener datos de la reserva
@@ -723,6 +723,7 @@ Tu reserva ha sido completada. A continuación encontrarás los códigos QR para
             $qr_data = array(
                 'reservation_code' => $reservation->reservation_code,
                 'customer_name' => $reservation->customer_name,
+                'customer_email' => $reservation->customer_email,
                 'service' => $reservation->service_title,
                 'person_number' => $i,
                 'total_people' => $reservation->num_people
@@ -737,7 +738,8 @@ Tu reserva ha sido completada. A continuación encontrarás los códigos QR para
             // Añadir imagen del QR al mensaje
             $message .= sprintf(
                 '<p><strong>' . __('QR para persona %d de %d:', 'wp-booking-plugin') . '</strong></p>' .
-                '<img src="%s" alt="' . __('Código QR', 'wp-booking-plugin') . '" style="max-width: 200px; height: auto;"><br><br>',
+                '<img src="%s" alt="' . __('Código QR', 'wp-booking-plugin') . '" style="max-width: 200px; height: auto;"><br>' .
+                '<p><em>' . __('Este código es personal e intransferible', 'wp-booking-plugin') . '</em></p><br>',
                 $i,
                 $reservation->num_people,
                 $qr_url
@@ -759,11 +761,15 @@ Saludos,
         // Configurar cabeceras para correo HTML
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
+        // Añadir remitente personalizado
+        $site_name = get_bloginfo('name');
+        $admin_email = get_option('admin_email');
+        $headers[] = 'From: ' . $site_name . ' <' . $admin_email . '>';
+        
         // Enviar correo
         wp_mail($reservation->customer_email, $subject, nl2br($message), $headers);
         
         // Actualizar los códigos QR en la base de datos
-        global $wpdb;
         $wpdb->update(
             $wpdb->prefix . 'booking_reservations',
             array('qr_codes' => json_encode($qr_codes)),
