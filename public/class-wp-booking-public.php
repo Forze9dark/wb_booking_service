@@ -1,5 +1,3 @@
-Here's the complete file content with the diff changes properly applied:
-
 <?php
 /**
  * La funcionalidad pública del plugin.
@@ -496,8 +494,72 @@ class WP_Booking_Public {
             // Confirmar transacción
             $wpdb->query("COMMIT");
             
-            // Enviar correo de confirmación de reserva
-            $this->send_reservation_confirmation_email($customer_name, $customer_email, $service->title, $num_people, $total_price, $reservation_code);
+            // Generar códigos QR para cada persona
+            $qr_codes_html = '';
+            for ($i = 1; $i <= $num_people; $i++) {
+                $qr_data = array(
+                    'reservation_code' => $reservation_code,
+                    'customer_name' => $customer_name,
+                    'customer_email' => $customer_email,
+                    'service' => $service->title,
+                    'person_number' => $i,
+                    'total_people' => $num_people
+                );
+                
+                $qr_data_encoded = urlencode(json_encode($qr_data));
+                $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
+                
+                $qr_codes_html .= sprintf(
+                    '<div style="margin: 20px 0; text-align: center;">
+                        <p style="margin-bottom: 10px; color: #666;">Código QR para persona %d de %d</p>
+                        <img src="%s" alt="Código QR" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
+                        <p style="margin-top: 10px; font-style: italic; color: #666;">Este código es personal e intransferible</p>
+                    </div>',
+                    $i,
+                    $num_people,
+                    $qr_url
+                );
+            }
+
+            // Enviar correo de confirmación
+            $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $service->title);
+            
+            $message = sprintf(
+                __('Hola %s,
+
+Tu reserva para %s ha sido confirmada.
+
+Detalles de la reserva:
+- Código de reserva: %s
+- Servicio: %s
+- Personas: %d
+- Total: %.2f €
+
+%s
+
+Saludos,
+%s', 'wp-booking-plugin'),
+                $customer_name,
+                $service->title,
+                $reservation_code,
+                $service->title,
+                $num_people,
+                $total_price,
+                $qr_codes_html,
+                get_bloginfo('name')
+            );
+
+            $headers = array('Content-Type: text/html; charset=UTF-8');
+            
+            if (wp_mail($customer_email, $subject, $message, $headers)) {
+                if (WP_DEBUG === true) {
+                    error_log('WP Booking: Correo de confirmación enviado correctamente a ' . $customer_email);
+                }
+            } else {
+                if (WP_DEBUG === true) {
+                    error_log('WP Booking: Error al enviar correo de confirmación a ' . $customer_email);
+                }
+            }
             
             // Enviar respuesta exitosa
             wp_send_json_success(array(
@@ -654,48 +716,4 @@ class WP_Booking_Public {
         
         return $group_items;
     }
-
-    /**
-     * Envía el correo de confirmación de reserva
-     */
-    private function send_reservation_confirmation_email($customer_name, $customer_email, $service_title, $num_people, $total_price, $reservation_code) {
-        // Activar debugging
-        if (WP_DEBUG === true) {
-            error_log('WP Booking: Iniciando envío de correo de confirmación');
-            error_log('WP Booking: Datos de reserva - Código: ' . $reservation_code . ', Cliente: ' . $customer_name);
-        }
-
-        $subject = sprintf(__('Reserva Confirmada - %s', 'wp-booking-plugin'), $service_title);
-        
-        // Generar códigos QR para cada persona
-        $qr_codes_html = '';
-        for ($i = 1; $i <= $num_people; $i++) {
-            if (WP_DEBUG === true) {
-                error_log('WP Booking: Generando QR para persona ' . $i . ' de ' . $num_people);
-            }
-
-            $qr_data = array(
-                'reservation_code' => $reservation_code,
-                'customer_name' => $customer_name,
-                'customer_email' => $customer_email,
-                'service' => $service_title,
-                'person_number' => $i,
-                'total_people' => $num_people
-            );
-            
-            $qr_data_encoded = urlencode(json_encode($qr_data));
-            $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . $qr_data_encoded;
-            
-            if (WP_DEBUG === true) {
-                error_log('WP Booking: URL del QR generada - ' . $qr_url);
-            }
-
-            $qr_codes_html .= sprintf(
-                '<div style="margin: 20px 0; text-align: center;">
-                    <p style="margin-bottom: 10px; color: #666;">Código QR para persona %d de %d</p>
-                    <img src="%s" alt="Código QR" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
-                    <p style="margin-top: 10px; font-style: italic; color: #666;">Este código es personal e intransferible</p>
-                </div>',
-                $i,
-                $num_people,
-                $
+}
