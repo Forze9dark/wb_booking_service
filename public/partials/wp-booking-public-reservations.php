@@ -153,6 +153,9 @@ $ajax_nonce = wp_create_nonce('wp_booking_nonce');
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+    
+    <!-- Modal de detalles del servicio -->
+    <div class="wp-booking-modal" id="wp-booking-service-modal">
         <div class="wp-booking-modal-overlay"></div>
         <div class="wp-booking-modal-container">
             <button class="wp-booking-modal-close">
